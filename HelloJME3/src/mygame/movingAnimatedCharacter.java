@@ -114,8 +114,6 @@ public class movingAnimatedCharacter extends SimpleApplication
     }
 
     private void setupKeys() {
-        inputManager.addMapping("wireframe", new KeyTrigger(KeyInput.KEY_T));
-        inputManager.addListener(this, "wireframe");
         inputManager.addMapping("CharLeft", new KeyTrigger(KeyInput.KEY_A));
         inputManager.addMapping("CharRight", new KeyTrigger(KeyInput.KEY_D));
         inputManager.addMapping("CharUp", new KeyTrigger(KeyInput.KEY_W));
@@ -130,6 +128,99 @@ public class movingAnimatedCharacter extends SimpleApplication
         inputManager.addListener(this, "CharShoot");
     }
 
+        @Override
+    public void onAction(String binding, boolean value, float tpf) {
+        if (binding.equals("CharLeft")) {
+            if (value) {
+                left = true;
+            } else {
+                left = false;
+            }
+        } else if (binding.equals("CharRight")) {
+            if (value) {
+                right = true;
+            } else {
+                right = false;
+            }
+        } else if (binding.equals("CharUp")) {
+            if (value) {
+                up = true;
+            } else {
+                up = false;
+            }
+        } else if (binding.equals("CharDown")) {
+            if (value) {
+                down = true;
+            } else {
+                down = false;
+            }
+        } else if (binding.equals("CharSpace")) {
+            character.jump();
+        } else if (binding.equals("CharShoot") && !value) {
+            bulletControl();
+        }
+    }
+
+        @Override
+    public void simpleUpdate(float tpf) {
+        Vector3f camDir = cam.getDirection().clone().multLocal(10f);
+        Vector3f camLeft = cam.getLeft().clone().multLocal(10f);
+        camDir.y = 0;
+        camLeft.y = 0;
+        walkDirection.set(0, 0, 0);
+        if (left) {
+            walkDirection.addLocal(camLeft);
+        }
+        if (right) {
+            walkDirection.addLocal(camLeft.negate());
+        }
+        if (up) {
+            walkDirection.addLocal(camDir);
+        }
+        if (down) {
+            walkDirection.addLocal(camDir.negate());
+        }
+        if (!character.onGround()) {
+            airTime = airTime + tpf;
+        } else {
+            airTime = 0;
+        }
+
+        Action action = composer.getCurrentAction("walkingLayer");
+        if (walkDirection.length() == 0f) {
+            if (action != standAction) {
+                composer.setCurrentAction("stand", "walkingLayer");
+            }
+        } else {
+            character.setViewDirection(walkDirection);
+            if (airTime > 0.3f) {
+                if (action != standAction) {
+                    composer.setCurrentAction("stand", "walkingLayer");
+                }
+            } else if (action != walkAction) {
+                composer.setCurrentAction("Walk", "walkingLayer");
+            }
+        }
+        character.setWalkDirection(walkDirection);
+    }
+
+
+
+    private void setupChaseCamera() {
+        flyCam.setEnabled(false);
+        new ChaseCamera(cam, model, inputManager);
+    }
+
+        private void createCharacter() {
+        CapsuleCollisionShape capsule = new CapsuleCollisionShape(3f, 4f);
+        character = new CharacterControl(capsule, 0.01f);
+        model = (Node) assetManager.loadModel("Models/Oto/Oto.mesh.xml");
+        model.addControl(character);
+        character.setPhysicsLocation(new Vector3f(-140, 40, -10));
+        rootNode.attachChild(model);
+        getPhysicsSpace().add(character);
+    }
+    
     private void createWall() {
         float xOff = -144;
         float zOff = -40;
@@ -260,20 +351,7 @@ public class movingAnimatedCharacter extends SimpleApplication
         getPhysicsSpace().add(terrainPhysicsNode);
     }
 
-    private void createCharacter() {
-        CapsuleCollisionShape capsule = new CapsuleCollisionShape(3f, 4f);
-        character = new CharacterControl(capsule, 0.01f);
-        model = (Node) assetManager.loadModel("Models/Oto/Oto.mesh.xml");
-        model.addControl(character);
-        character.setPhysicsLocation(new Vector3f(-140, 40, -10));
-        rootNode.attachChild(model);
-        getPhysicsSpace().add(character);
-    }
 
-    private void setupChaseCamera() {
-        flyCam.setEnabled(false);
-        new ChaseCamera(cam, model, inputManager);
-    }
 
     private void setupAnimationController() {
         composer = model.getControl(AnimComposer.class);
@@ -311,81 +389,9 @@ public class movingAnimatedCharacter extends SimpleApplication
         composer.setCurrentAction("stand", "walkingLayer");
     }
 
-    @Override
-    public void simpleUpdate(float tpf) {
-        Vector3f camDir = cam.getDirection().clone().multLocal(10f);
-        Vector3f camLeft = cam.getLeft().clone().multLocal(10f);
-        camDir.y = 0;
-        camLeft.y = 0;
-        walkDirection.set(0, 0, 0);
-        if (left) {
-            walkDirection.addLocal(camLeft);
-        }
-        if (right) {
-            walkDirection.addLocal(camLeft.negate());
-        }
-        if (up) {
-            walkDirection.addLocal(camDir);
-        }
-        if (down) {
-            walkDirection.addLocal(camDir.negate());
-        }
-        if (!character.onGround()) {
-            airTime = airTime + tpf;
-        } else {
-            airTime = 0;
-        }
 
-        Action action = composer.getCurrentAction("walkingLayer");
-        if (walkDirection.length() == 0f) {
-            if (action != standAction) {
-                composer.setCurrentAction("stand", "walkingLayer");
-            }
-        } else {
-            character.setViewDirection(walkDirection);
-            if (airTime > 0.3f) {
-                if (action != standAction) {
-                    composer.setCurrentAction("stand", "walkingLayer");
-                }
-            } else if (action != walkAction) {
-                composer.setCurrentAction("Walk", "walkingLayer");
-            }
-        }
-        character.setWalkDirection(walkDirection);
-    }
 
-    @Override
-    public void onAction(String binding, boolean value, float tpf) {
-        if (binding.equals("CharLeft")) {
-            if (value) {
-                left = true;
-            } else {
-                left = false;
-            }
-        } else if (binding.equals("CharRight")) {
-            if (value) {
-                right = true;
-            } else {
-                right = false;
-            }
-        } else if (binding.equals("CharUp")) {
-            if (value) {
-                up = true;
-            } else {
-                up = false;
-            }
-        } else if (binding.equals("CharDown")) {
-            if (value) {
-                down = true;
-            } else {
-                down = false;
-            }
-        } else if (binding.equals("CharSpace")) {
-            character.jump();
-        } else if (binding.equals("CharShoot") && !value) {
-            bulletControl();
-        }
-    }
+
 
     private void bulletControl() {
         composer.setCurrentAction("shootOnce", "shootingLayer");
