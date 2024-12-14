@@ -30,11 +30,16 @@ import java.lang.System;
 public class JumpyHopi extends SimpleApplication
     implements ActionListener{
 
-    private Node model;
+    private Node player;
     private CharacterControl character;
+
+    private Node grubo;
+    private CharacterControl charGrubo;
+    
     private float airTime = 100;
     
     Spatial startGround;
+    Spatial nextGround;
     private boolean left = false, right = false, up = false, down = false;
 
     final private Vector3f walkDirection = new Vector3f();
@@ -54,12 +59,11 @@ public class JumpyHopi extends SimpleApplication
 	
 	setupWindow();
 	initObjects();
+	setPhysicsObjects();
 	setupKeys();
 	createCharacter();
+	initEnemies();
 	setupChaseCamera();
-	
-
-
 	initRotate();
 	setUpLight();
 	addRootNode();
@@ -80,19 +84,41 @@ public class JumpyHopi extends SimpleApplication
 	Box startGMesh = new Box(10f,0.2f,10f);
 	startGround = new Geometry("Box", startGMesh);
 	startGround.setLocalTranslation(new Vector3f(1,-5,5));
+
+	Box nextGMesh = new Box(10f,0.2f,10f);
+	nextGround = new Geometry("Box", nextGMesh);
+	nextGround.setLocalTranslation(new Vector3f(1,-5,-20));
 	
 	Material startGroundMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-
 	Texture grassTex = assetManager.loadTexture("Textures/grass.jpg");
 	startGroundMat.setTexture("ColorMap", grassTex);
+	
 	startGround.setMaterial(startGroundMat);
+	nextGround.setMaterial(startGroundMat);
+    }
 
+    private void initEnemies(){
+	CapsuleCollisionShape capsule = new CapsuleCollisionShape(3f, 0.5f, 1);
+	charGrubo = new CharacterControl(capsule, 0.01f);
+
+	grubo = (Node) assetManager.loadModel("Models/grubo.gltf");
+	grubo.scale(2f,2f,2f);
+	grubo.addControl(charGrubo);
+	
+	charGrubo.setPhysicsLocation(new Vector3f(0,0,0));
+	getPhysicsSpace().add(charGrubo);
+    }
+
+    private void setPhysicsObjects(){
 	CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(startGround);
 	RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
 	startGround.addControl(landscape);
 	bulletAppState.getPhysicsSpace().add(landscape);
 
-	/* */
+	CollisionShape nextGroundShape = CollisionShapeFactory.createMeshShape(nextGround);
+	RigidBodyControl landscapeNextGround = new RigidBodyControl(nextGroundShape, 0);
+	nextGround.addControl(landscapeNextGround);
+	bulletAppState.getPhysicsSpace().add(landscapeNextGround);
     }
 
     private void setupKeys(){
@@ -144,17 +170,16 @@ public class JumpyHopi extends SimpleApplication
 
     private void setupChaseCamera(){
 	flyCam.setEnabled(false);
-	new ChaseCamera(cam, model, inputManager);
+	new ChaseCamera(cam, player, inputManager);
     }
 
     private void createCharacter(){
 	CapsuleCollisionShape capsule = new CapsuleCollisionShape(3f, 0.5f, 1);
 	character = new CharacterControl(capsule, 0.01f);
 
-	model = (Node) assetManager.loadModel("Models/player.gltf");
-	model.addControl(character);
+	player = (Node) assetManager.loadModel("Models/player.gltf");
+	player.addControl(character);
 	character.setPhysicsLocation(new Vector3f(0,0,0));
-	rootNode.attachChild(model);
 	getPhysicsSpace().add(character);
     }
 
@@ -165,13 +190,11 @@ public class JumpyHopi extends SimpleApplication
     private void initRotate(){
 	float radian = FastMath.PI * 1.5f;
 	
-	model.rotate(0f,radian,0f);
-	model.setLocalTranslation(0f,-3f,-2f);
+	player.rotate(0f,radian,0f);
+	player.setLocalTranslation(0f,-3f,-2f);
 	
 		
     }
-
-
     
     private void setUpLight(){
 	DirectionalLight dirLight = new DirectionalLight();
@@ -182,8 +205,10 @@ public class JumpyHopi extends SimpleApplication
     }
 
     private void addRootNode(){
-	rootNode.attachChild(model);
-	rootNode.attachChild(startGround);	
+	rootNode.attachChild(player);
+	rootNode.attachChild(grubo);
+	rootNode.attachChild(startGround);
+	rootNode.attachChild(nextGround);
     }
     
     @Override
