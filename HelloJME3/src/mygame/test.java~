@@ -1,0 +1,60 @@
+package mygame;
+
+import com.jme3.app.SimpleApplication;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.shape.Box;
+import com.jme3.system.AppSettings;
+
+public class test extends SimpleApplication {
+    private Geometry npc;
+    private float time = 0;
+    private float moveSpeed = 2f;
+    private float radius = 5f;
+
+    public static void main(String[] args) {
+        test app = new test();
+        AppSettings settings = new AppSettings(true);
+        settings.setTitle("Simple NPC Demo");
+        app.setSettings(settings);
+        app.start();
+    }
+
+    @Override
+    public void simpleInitApp() {
+        // Create the NPC cube
+        Box box = new Box(1, 1, 1);
+        npc = new Geometry("NPC", box);
+        Material mat = new Material(assetManager, 
+            "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.setColor("Color", ColorRGBA.Blue);
+        npc.setMaterial(mat);
+        
+        // Position the NPC
+        npc.setLocalTranslation(radius, 0, 0);
+        
+        // Add NPC to the scene
+        rootNode.attachChild(npc);
+        
+        // Set up camera
+        cam.setLocation(new Vector3f(0, 10, 20));
+        cam.lookAt(Vector3f.ZERO, Vector3f.UNIT_Y);
+        
+        // Add some light
+        viewPort.setBackgroundColor(ColorRGBA.LightGray);
+        flyCam.setMoveSpeed(20);
+    }
+
+    @Override
+    public void simpleUpdate(float tpf) {
+        // Update time
+        time += tpf * moveSpeed;
+        
+        // Make the NPC move in a circle
+        float x = (float) Math.cos(time) * radius;
+        float z = (float) Math.sin(time) * radius;
+        npc.setLocalTranslation(x, 0, z);
+    }
+}

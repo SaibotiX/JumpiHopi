@@ -23,7 +23,10 @@ import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
 
 import java.lang.System;
     
@@ -35,11 +38,17 @@ public class JumpyHopi extends SimpleApplication
 
     private Node grubo;
     private CharacterControl charGrubo;
+    private GhostControl gruboGhost;
     
     private float airTime = 100;
     
     Spatial startGround;
     Spatial nextGround;
+    Spatial groundNextBox;
+
+    Node cage;
+
+    private float blockingDistance = 3f;
     private boolean left = false, right = false, up = false, down = false;
 
     final private Vector3f walkDirection = new Vector3f();
@@ -80,33 +89,41 @@ public class JumpyHopi extends SimpleApplication
     }
     
     private void initObjects(){
-	/*Make Grass Ground*/
-	Box startGMesh = new Box(10f,0.2f,10f);
-	startGround = new Geometry("Box", startGMesh);
-	startGround.setLocalTranslation(new Vector3f(1,-5,5));
-
-	Box nextGMesh = new Box(10f,0.2f,10f);
-	nextGround = new Geometry("Box", nextGMesh);
-	nextGround.setLocalTranslation(new Vector3f(1,-5,-20));
 	
 	Material startGroundMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
 	Texture grassTex = assetManager.loadTexture("Textures/grass.jpg");
 	startGroundMat.setTexture("ColorMap", grassTex);
 	
+	Box startGMesh = new Box(10f,0.2f,10f);
+	startGround = new Geometry("Box", startGMesh);
+	startGround.setLocalTranslation(new Vector3f(1,-5,5));
+
+	nextGround = new Geometry("Box", startGMesh);
+	nextGround.setLocalTranslation(new Vector3f(1,-5,-20));
+
+	groundNextBox = new Geometry("Box", startGMesh);
+	groundNextBox.setLocalTranslation(new Vector3f(+25f,-5f,-15f));
+	
 	startGround.setMaterial(startGroundMat);
 	nextGround.setMaterial(startGroundMat);
+	groundNextBox.setMaterial(startGroundMat);
+	
+
+	cage = (Node) assetManager.loadModel("Models/cage.gltf");
+	cage.setLocalTranslation(new Vector3f(25f,-11f,10f));
     }
 
     private void initEnemies(){
-	CapsuleCollisionShape capsule = new CapsuleCollisionShape(3f, 0.5f, 1);
+	CapsuleCollisionShape capsule = new CapsuleCollisionShape(1f, 1f, 1);
 	charGrubo = new CharacterControl(capsule, 0.01f);
 
 	grubo = (Node) assetManager.loadModel("Models/grubo.gltf");
-	grubo.scale(2f,2f,2f);
+	grubo.scale(2f,4f,2f);
 	grubo.addControl(charGrubo);
 	
-	charGrubo.setPhysicsLocation(new Vector3f(0,0,0));
+	charGrubo.setPhysicsLocation(new Vector3f(20,-5,5));
 	getPhysicsSpace().add(charGrubo);
+
     }
 
     private void setPhysicsObjects(){
@@ -119,6 +136,16 @@ public class JumpyHopi extends SimpleApplication
 	RigidBodyControl landscapeNextGround = new RigidBodyControl(nextGroundShape, 0);
 	nextGround.addControl(landscapeNextGround);
 	bulletAppState.getPhysicsSpace().add(landscapeNextGround);
+
+	CollisionShape nextBoxShape = CollisionShapeFactory.createMeshShape(groundNextBox);
+	RigidBodyControl landscapeNextBox = new RigidBodyControl(nextBoxShape, 0);
+	groundNextBox.addControl(landscapeNextBox);
+	bulletAppState.getPhysicsSpace().add(landscapeNextBox);
+
+	CollisionShape boxShape = CollisionShapeFactory.createMeshShape(cage);
+	RigidBodyControl landscapeBox = new RigidBodyControl(boxShape, 0);
+	cage.addControl(landscapeBox);
+	bulletAppState.getPhysicsSpace().add(landscapeBox);
     }
 
     private void setupKeys(){
@@ -209,6 +236,8 @@ public class JumpyHopi extends SimpleApplication
 	rootNode.attachChild(grubo);
 	rootNode.attachChild(startGround);
 	rootNode.attachChild(nextGround);
+	rootNode.attachChild(cage);
+	rootNode.attachChild(groundNextBox);
     }
     
     @Override
@@ -237,6 +266,5 @@ public class JumpyHopi extends SimpleApplication
         }
 	
 	character.setWalkDirection(walkDirection);
-	    
     }
 }
